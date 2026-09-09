@@ -1,25 +1,29 @@
-name: ci
+name: download-youtube
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
-  build:
+  download:
     runs-on: ubuntu-latest
 
-    permissions:
-      contents: write
-      
     steps:
-      - name: Clone repository
-        uses: actions/checkout@v3
+      - name: Check out repository
+        uses: actions/checkout@v4
 
-      - name: download
+      - name: Install yt-dlp
+        run: python -m pip install --upgrade yt-dlp
+
+      - name: Download video
         run: |
-          git config --local user.email "justjavac@gmail.com"
-          git config --local user.name "迷渡"
-          git remote set-url origin https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-          git pull --rebase
-          ./bin/youtube-dl --config-location config.txt
-          git add .
-          git commit -m "download youtube video"
-          git push
+          rm -rf downloads
+          mkdir -p downloads
+          yt-dlp --config-location config.txt
+
+      - name: Upload video artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: youtube-download
+          path: downloads/**
